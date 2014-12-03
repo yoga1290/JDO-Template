@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Google AppEngine JDO Template</title>
+
+    <!-- Bootstrap -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>	
+  <body style='background-color: #f9faf7;'>
+    <h1>Google AppEngine JDO Template Generator:</h1>
+    <p>
+    	Press enter/return for a new field
+    </p>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="js/jquery.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/angular.js"></script>
+
+
+    <div class="container-fluid" ng-controller="objCtrl">
+
+	    <div class="row" ng-repeat="obj in objects">
+			<div class="panel panel-default col-md-3">
+				<div class="panel-heading">
+						<div class="col-md-3 col-ms-5">
+							<h1><span class="glyphicon glyphicon-list-alt"></span></h1>
+					</div>
+					<div class="col-md-8 col-ms-5">
+							<input type="text" class="form-control" ng-model="obj.name" placeholder="Object Class name">
+					</div>
+				
+				</div>
+				<div class="panel-body">
+				
+
+
+					<div class="input-group col-md-12" ng-repeat="field in obj.fields">
+						<input type="text" class="form-control" placeholder="Field name" ng-model="field.name" ng-keypress="keypress($event,obj)">
+
+						 <div class="input-group-btn">
+							<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">{{field.type}}<span class="caret"></span></button>
+							<ul class="dropdown-menu" role="menu">
+							<li><a href="#" ng-click="field.type='String';">String</a></li>
+							<li><a href="#" ng-click="field.type='int';">Integer</a></li>
+							<li role="presentation" class="divider"></li>
+							<li><a href="#" ng-click="field.type=specialField;">
+								<input type="text" ng-model="specialField" class="form-control" placeholder="Tab for other">
+								</a>
+							</li>
+							</ul>
+						</div><!-- .input-group-btn -->
+
+					</div>
+
+				</div> <!-- .panel-body -->
+			</div> <!-- .panel -->
+
+
+
+<div class="col-md-8">
+
+<ul class="nav nav-tabs" role="tablist">
+  <li ng-class="{active:selectedTab==1}">
+  	<a href="#" ng-click="selectedTab=1">
+  		<h4><span class="glyphicon glyphicon-file"></span>Obj Class</h4></a>
+  </li>
+  <li ng-class="{active:selectedTab==2}">
+	<a href="#" ng-click="selectedTab=2">
+		<h4><span class="glyphicon glyphicon-share-alt"></span> Repository</h4></a>
+	</a>
+  </li>
+  <li ng-class="{active:selectedTab==3}">
+	<a href="#" ng-click="selectedTab=3">
+		<h4><span class="glyphicon glyphicon-share-alt"></span> Controller </h4></a>
+	</a>
+  </li>
+</ul>
+
+		<div class="panel panel-default">
+		<div class="panel-body">
+
+
+
+		<!-- Object Class -->
+		<textarea class="form-control" width="100%" rows="46" ng-show="selectedTab==1">
+import java.util.Objects;
+
+import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
+
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
+
+
+@PersistenceCapable
+public class {{obj.name}} {
+
+	@PrimaryKey
+	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key key;
+	public void setKey(Key key) {
+		this.key = key;
+	}
+	public void setKey(String key) {
+		this.key = KeyFactory.createKey(this.getClass().getSimpleName(), key);
+	}
+
+	public {{obj.name}}(){
+
+	}
+	
+	{{getConstructor(obj)}}
+
+	{{getPersistentFields(obj)}}
+	
+	{{getSettersAndGetters(obj)}}
+}
+		</textarea> <!-- textarea -->
+
+		<!-- Repository -->
+		<textarea class="form-control" rows="40" ng-show="selectedTab==2">
+import java.util.Collection;
+import java.util.List;
+import javax.jdo.Query;
+import org.springframework.stereotype.Service;
+
+@Service
+public class {{obj.name}}Repository extends JDOCrudRepository<{{obj.name}}, String>{
+
+	public {{obj.name}}Repository() {
+		super({{obj.name}}.class);
+	}
+	
+	{{getRepositoryFinders(obj)}}
+}
+</textarea>
+
+		<!-- GET Controller -->
+		<textarea class="form-control" width="100%" rows="46" ng-show="selectedTab==3">
+import java.util.Collection;
+import java.util.List;
+
+import yoga1290.cinema.repository.User;
+import yoga1290.cinema.repository.UserRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+public class {{obj.name}}Svc
+{
+	@Autowired
+	private {{obj.name}}Repository {{obj.name}}s;
+
+	@RequestMapping(value="/{{obj.name}}s", method=RequestMethod.GET)
+	public @ResponseBody Collection<{{obj.name}}> get{{Capitalise(obj.name)}}List(){
+		return com.google.appengine.repackaged.com.google.common.collect.Lists.newArrayList({{obj.name}}s.findAll());
+	}
+	
+	@RequestMapping(value="/newUser", method=RequestMethod.GET)
+	public @ResponseBody User newUser()//@RequestBody User u)
+	{
+		User nUser=new User("yoga1290@gmail.com","123");
+		//TODO:
+		return users.save(nUser);
+	}
+}
+</textarea>
+
+		</div> <!-- .panel-body -->
+		</div> <!-- .panel -->
+
+		</div> <!-- .col -->
+
+		</div> <!-- .row -->
+
+	</div> <!-- .container -->
+
+	<script>
+	angular.module('app',[]);
+
+	angular
+		.module('app')
+			.controller('objCtrl',function($scope){
+				var sp=$scope;
+				sp.selectedTab=1;
+				sp.specialField='';
+				sp.objects=[
+							{
+								name:'',
+								fields:[
+									{
+										name:'',
+										type:'String'
+									}
+								]
+							}
+						];
+				sp.newObjClass=function(){
+					sp.objects.push({
+								name:'ObjectName',
+								fields:[
+									{
+										name:'fieldName',
+										type:'String'
+									}
+								]
+							});
+				};
+				sp.keypress=function(e,objClass){
+					if(e.keyCode==13)
+						sp.newField(objClass);
+				};
+				sp.newField=function(objClass){
+					objClass.fields.push({
+										name:'',
+										type:'String'
+									});
+				};
+
+				sp.Capitalise=function(string)
+				{
+					return string.charAt(0).toUpperCase() + string.slice(1);
+				};
+
+				sp.getPersistentFields=function(objClass){
+					var txt='';
+					for(var i=0;i<objClass.fields.length;i++)
+						txt+='@Persistent\n'
+							+'private '+objClass.fields[i].type+' '+objClass.fields[i].name+';\n\n';
+					return txt;
+				};
+
+				sp.getConstructor=function(objClass){
+					var parameters='',body='';
+					for(var i=0;i<objClass.fields.length;i++)
+					{
+						parameters+=','+objClass.fields[i].type+' '+objClass.fields[i].name;
+						body+='\t\tthis.'+objClass.fields[i].name+' = '+objClass.fields[i].name+';\n';
+					}
+					return ('\tpublic '+objClass.name+'('+parameters.substring(1,parameters.length)+'){\n'
+							+body+
+						'\t}');
+				};
+				
+				sp.getSetterOf=function(field){
+					return 'public void set'+sp.Capitalise(field.name)+'('+field.type+' '+field.name+') {\n'
+     					+'\t\tthis.'+field.name+' = '+field.name+';\n'
+        				+'\t}\n';
+				};
+				sp.getGetterOf=function(field){
+					return 'public '+field.type+' get'+sp.Capitalise(field.name)+'() {\n'
+     					+'\t\treturn this.'+field.name+';\n'
+        				+'\t}\n';
+				};
+				sp.getSettersAndGetters=function(objClass){
+					var txt='';
+					for(var i=0;i<objClass.fields.length;i++)
+					{
+						txt+=sp.getGetterOf(objClass.fields[i])
+							+sp.getSetterOf(objClass.fields[i]);
+					}
+					return txt;
+				};
+
+
+				sp.getRepositoryFinders=function(objClass){
+					var txt='';
+					for(var i=0;i<objClass.fields.length;i++)
+					txt+='\n@SuppressWarnings("unchecked")\n'
+						+'public Collection<'+objClass.name+'> findBy'+sp.Capitalise(objClass.fields[i].name)+'('+objClass.fields[i].type+' '+objClass.fields[i].name+'){\n'
+							+'\tQuery query = PMF.get().getPersistenceManager().newQuery('+objClass.name+'.class);\n'
+							+'\tquery.setFilter("'+objClass.fields[i].name+' == n");\n'
+							+'\tquery.declareParameters("'+objClass.fields[i].type+' n");\n'
+							+'\treturn (List<'+objClass.name+'>)query.execute('+objClass.fields[i].name+');\n'
+						+'}\n';
+					return txt;
+				};
+			});
+	</script>
+  </body>
+</html>
