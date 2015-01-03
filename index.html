@@ -111,6 +111,14 @@ public class {{obj.name}} {
 
 	@PrimaryKey
 	@Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+	private long key;
+	public long getKey() {
+		return this.key;
+	}
+	public void setKey(long key) {
+		this.key = key;
+	}
+	/*
     private Key key;
 	public void setKey(Key key) {
 		this.key = key;
@@ -118,6 +126,7 @@ public class {{obj.name}} {
 	public void setKey(String key) {
 		this.key = KeyFactory.createKey(this.getClass().getSimpleName(), key);
 	}
+	//*/
 
 	public {{obj.name}}(){
 
@@ -139,7 +148,7 @@ import javax.jdo.Query;
 import org.springframework.stereotype.Service;
 
 @Service
-public class {{obj.name}}Repository extends JDOCrudRepository<{{obj.name}}, String>{
+public class {{obj.name}}Repository extends JDOCrudRepository<{{obj.name}}, Long>{
 
 	public {{obj.name}}Repository() {
 		super({{obj.name}}.class);
@@ -153,9 +162,6 @@ public class {{obj.name}}Repository extends JDOCrudRepository<{{obj.name}}, Stri
 		<textarea class="form-control" width="100%" rows="46" ng-show="selectedTab==3">
 import java.util.Collection;
 import java.util.List;
-
-import yoga1290.cinema.repository.User;
-import yoga1290.cinema.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -171,18 +177,29 @@ public class {{obj.name}}Svc
 	@Autowired
 	private {{obj.name}}Repository {{obj.name}}s;
 
-	@RequestMapping(value="/{{obj.name}}s", method=RequestMethod.GET)
+	@RequestMapping(value="/{{obj.name}}s/all", method=RequestMethod.GET)
 	public @ResponseBody Collection<{{obj.name}}> get{{Capitalise(obj.name)}}List(){
 		return com.google.appengine.repackaged.com.google.common.collect.Lists.newArrayList({{obj.name}}s.findAll());
 	}
-	
-	@RequestMapping(value="/newUser", method=RequestMethod.GET)
-	public @ResponseBody User newUser()//@RequestBody User u)
-	{
-		User nUser=new User("yoga1290@gmail.com","123");
-		//TODO:
-		return users.save(nUser);
+
+	@RequestMapping(value="/{{obj.name}}s", method=RequestMethod.GET)
+	public @ResponseBody Collection<{{obj.name}}> get{{Capitalise(obj.name)}}List(@RequestParam int offset,@RequestParam int limit){
+		return {{obj.name}}s.findAll(offset,limit);
 	}
+	
+	@RequestMapping(value="/{{obj.name}}", method=RequestMethod.GET)
+	public @ResponseBody {{obj.name}} findOne(@RequestParam long id)
+	{
+		return {{obj.name}}s.findOne(id);
+	}
+
+	@RequestMapping(value="/{{obj.name}}", method=RequestMethod.POST)
+	public @ResponseBody {{obj.name}} set(@RequestBody {{obj.name}} o{{obj.name}})
+	{
+		{{obj.name}} n{{obj.name}}=new {{obj.name}}({{getMappedFields(obj)}});
+		return {{obj.name}}s.save(n{{obj.name}});
+	}
+
 }
 </textarea>
 
@@ -261,6 +278,8 @@ public class {{obj.name}}Svc
 							+body+
 						'\t}');
 				};
+
+
 				
 				sp.getSetterOf=function(field){
 					return 'public void set'+sp.Capitalise(field.name)+'('+field.type+' '+field.name+') {\n'
@@ -294,6 +313,26 @@ public class {{obj.name}}Svc
 							+'\treturn (List<'+objClass.name+'>)query.execute('+objClass.fields[i].name+');\n'
 						+'}\n';
 					return txt;
+				};
+
+				sp.getRepositoryFindersWLimit=function(objClass){
+					var txt='';
+					for(var i=0;i<objClass.fields.length;i++)
+					txt+='\n@SuppressWarnings("unchecked")\n'
+						+'public Collection<'+objClass.name+'> findBy'+sp.Capitalise(objClass.fields[i].name)+'('+objClass.fields[i].type+' '+objClass.fields[i].name+'){\n'
+							+'\tQuery query = PMF.get().getPersistenceManager().newQuery('+objClass.name+'.class);\n'
+							+'\tquery.setFilter("'+objClass.fields[i].name+' == n");\n'
+							+'\tquery.declareParameters("'+objClass.fields[i].type+' n");\n'
+							+'\treturn (List<'+objClass.name+'>)query.execute('+objClass.fields[i].name+');\n'
+						+'}\n';
+					return txt;
+				};
+
+				sp.getMappedFields=function(objClass){
+					var txt='';
+					for(var i=0;i<objClass.fields.length;i++)
+						txt+=',o'+objClass.name+'.get'+sp.Capitalise(objClass.fields[i].name)+'()';
+					return txt.substring(1,txt.length);
 				};
 			});
 	</script>
